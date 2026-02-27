@@ -7,11 +7,17 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.room.Room;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
     EditText editDrug, editRoute, editDosage;
     Button buttonSave;
+    RecyclerView recyclerView;
+    DrugAdapter adapter;
     AppDatabase db;
 
     @Override
@@ -43,6 +49,9 @@ public class MainActivity extends AppCompatActivity {
             entry.timestamp = timestamp;
 
             db.drugDao().insert(entry);
+            List<DrugEntry> updatedEntries = db.drugDao().getAll();
+            adapter = new DrugAdapter(updatedEntries);
+            recyclerView.setAdapter(adapter);
 
             Toast.makeText(this,
                     "Saved to database",
@@ -52,5 +61,11 @@ public class MainActivity extends AppCompatActivity {
             editRoute.setText("");
             editDosage.setText("");
         });
+        recyclerView = findViewById(R.id.recyclerView);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+
+        List<DrugEntry> entries = db.drugDao().getAll();
+        adapter = new DrugAdapter(entries);
+        recyclerView.setAdapter(adapter);
     }
 }
