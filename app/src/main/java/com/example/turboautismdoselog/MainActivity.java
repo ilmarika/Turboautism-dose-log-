@@ -9,7 +9,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 public class MainActivity extends AppCompatActivity {
 
-    EditText editMedication, editRoute, editDosage;
+    EditText editDrug, editRoute, editDosage;
     Button buttonSave;
 
     @Override
@@ -17,21 +17,21 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        editMedication = findViewById(R.id.editMedication);
+        editDrug = findViewById(R.id.editDrug);
         editRoute = findViewById(R.id.editRoute);
         editDosage = findViewById(R.id.editDosage);
         buttonSave = findViewById(R.id.buttonSave);
 
         buttonSave.setOnClickListener(v -> {
 
-            String medication = editMedication.getText().toString();
+            String drug = editDrug.getText().toString();
             String route = editRoute.getText().toString();
             String dosage = editDosage.getText().toString();
             long timestamp = System.currentTimeMillis();
 
             Toast.makeText(this,
                     "Saved:\n" +
-                            "Medication: " + medication + "\n" +
+                            "Drug: " + drug + "\n" +
                             "Route: " + route + "\n" +
                             "Dosage: " + dosage + "\n" +
                             "Timestamp: " + timestamp,

@@ -10,10 +10,10 @@
         android:padding="16dp">
 
         <EditText
-            android:id="@+id/editMedication"
+            android:id="@+id/editDrug"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Medication name" />
+            android:hint="Drug name" />
 
         <EditText
             android:id="@+id/editRoute"
