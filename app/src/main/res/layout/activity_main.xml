@@ -9,11 +9,11 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <EditText
+        <AutoCompleteTextView
             android:id="@+id/editDrug"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Drug name" />
+            android:hint="Drug name"/>
 
         <EditText
             android:id="@+id/editRoute"
@@ -32,6 +32,13 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Save Entry" />
+
+        <Button
+            android:id="@+id/buttonExport"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Export CSV"
+            android:layout_marginTop="8dp"/>
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerView"

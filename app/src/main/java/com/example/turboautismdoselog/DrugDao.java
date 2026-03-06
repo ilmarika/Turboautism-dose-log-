@@ -3,6 +3,7 @@ package com.example.turboautismdoselog;
 import androidx.room.Dao;
 import androidx.room.Insert;
 import androidx.room.Query;
+import androidx.room.Delete;
 
 import java.util.List;
 
@@ -14,4 +15,7 @@ public interface DrugDao {
 
     @Query("SELECT * FROM DrugEntry ORDER BY timestamp DESC")
     List<DrugEntry> getAll();
+
+    @Delete
+    void delete(DrugEntry entry);
 }
