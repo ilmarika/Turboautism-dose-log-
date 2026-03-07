@@ -41,7 +41,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Toolbar menu
+        // Toolbar export menu
         MaterialToolbar toolbar = findViewById(R.id.topAppBar);
         toolbar.setOnMenuItemClickListener(item -> {
 
@@ -53,11 +53,11 @@ public class MainActivity extends AppCompatActivity {
             return false;
         });
 
-        // FAB
+        // Floating action button
         FloatingActionButton fab = findViewById(R.id.fabAddEntry);
         fab.setOnClickListener(v -> openAddEntrySheet());
 
-        // RecyclerView
+        // RecyclerView setup
         recyclerView = findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
@@ -72,12 +72,16 @@ public class MainActivity extends AppCompatActivity {
         setupSwipeDelete();
     }
 
+    // Refresh RecyclerView
     private void refreshList() {
+
         List<DrugEntry> entries = db.drugDao().getAll();
-        adapter = new DrugAdapter(entries);
+
+        adapter = new DrugAdapter(entries, entry -> openEditEntrySheet(entry));
         recyclerView.setAdapter(adapter);
     }
 
+    // Swipe to delete
     private void setupSwipeDelete() {
 
         ItemTouchHelper.SimpleCallback swipeHandler =
@@ -115,6 +119,7 @@ public class MainActivity extends AppCompatActivity {
         new ItemTouchHelper(swipeHandler).attachToRecyclerView(recyclerView);
     }
 
+    // Add new entry bottom sheet
     private void openAddEntrySheet() {
 
         BottomSheetDialog dialog = new BottomSheetDialog(this);
@@ -154,27 +159,65 @@ public class MainActivity extends AppCompatActivity {
         dialog.show();
     }
 
+    // Edit entry bottom sheet
+    private void openEditEntrySheet(DrugEntry entry) {
+
+        BottomSheetDialog dialog = new BottomSheetDialog(this);
+        View view = getLayoutInflater().inflate(R.layout.bottom_sheet_add_entry, null);
+        dialog.setContentView(view);
+
+        AutoCompleteTextView drug = view.findViewById(R.id.editDrugSheet);
+        EditText route = view.findViewById(R.id.editRouteSheet);
+        EditText dosage = view.findViewById(R.id.editDosageSheet);
+        Button save = view.findViewById(R.id.buttonSaveSheet);
+
+        setupDrugAutocomplete(drug);
+
+        drug.setText(entry.drug);
+        route.setText(entry.route);
+        dosage.setText(entry.dosage);
+
+        save.setOnClickListener(v -> {
+
+            entry.drug = drug.getText().toString();
+            entry.route = route.getText().toString();
+            entry.dosage = dosage.getText().toString();
+
+            db.drugDao().update(entry);
+
+            refreshList();
+            dialog.dismiss();
+        });
+
+        dialog.show();
+    }
+
+    // Drug autocomplete
     private void setupDrugAutocomplete(AutoCompleteTextView field) {
 
         List<DrugEntry> entries = db.drugDao().getAll();
         List<String> drugNames = new ArrayList<>();
 
         for (DrugEntry entry : entries) {
-            if (!drugNames.contains(entry.drug)) {
+
+            if (entry.drug != null && !drugNames.contains(entry.drug)) {
                 drugNames.add(entry.drug);
             }
         }
 
         ArrayAdapter<String> adapter =
-                new ArrayAdapter<>(this,
+                new ArrayAdapter<>(
+                        this,
                         android.R.layout.simple_dropdown_item_1line,
-                        drugNames);
+                        drugNames
+                );
 
         field.setAdapter(adapter);
         field.setThreshold(1);
         field.setOnClickListener(v -> field.showDropDown());
     }
 
+    // CSV export
     private void exportDatabaseToCSV() {
 
         List<DrugEntry> entries = db.drugDao().getAll();
@@ -184,18 +227,24 @@ public class MainActivity extends AppCompatActivity {
 
         String timestamp = fileDateFormat.format(new Date());
 
-        File downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+        File downloadsDir =
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+
         File file = new File(downloadsDir, "drug_log_" + timestamp + ".csv");
 
         try {
 
             FileWriter writer = new FileWriter(file);
+
             writer.append("Drug,Route,Dosage,Timestamp\n");
 
             for (DrugEntry entry : entries) {
 
                 Date date = new Date(entry.timestamp);
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
+
+                SimpleDateFormat sdf =
+                        new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
+
                 String formattedTime = sdf.format(date);
 
                 writer.append(entry.drug).append(",");
