@@ -14,11 +14,12 @@ import java.util.Locale;
 
 public class StatisticsActivity extends AppCompatActivity {
 
-    TextView statTotalEntries;
-    TextView statMostUsedDrug;
-    TextView statLastDose;
+    private TextView statTotalEntries;
+    private TextView statMostUsedDrug;
+    private TextView statLastDose;
+    private TextView statAvgPerDay;
 
-    AppDatabase db;
+    private AppDatabase db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,6 +29,7 @@ public class StatisticsActivity extends AppCompatActivity {
         statTotalEntries = findViewById(R.id.statTotalEntries);
         statMostUsedDrug = findViewById(R.id.statMostUsedDrug);
         statLastDose = findViewById(R.id.statLastDose);
+        statAvgPerDay = findViewById(R.id.statAvgPerDay);
 
         db = Room.databaseBuilder(
                 getApplicationContext(),
@@ -42,40 +44,74 @@ public class StatisticsActivity extends AppCompatActivity {
 
         List<DrugEntry> entries = db.drugDao().getAll();
 
-        statTotalEntries.setText("Total entries: " + entries.size());
+        // Total entries
+        statTotalEntries.setText(String.valueOf(entries.size()));
 
+        if (entries.isEmpty()) {
+            statMostUsedDrug.setText("—");
+            statLastDose.setText("—");
+            return;
+        }
+
+        // Count drugs
         HashMap<String, Integer> counts = new HashMap<>();
 
         for (DrugEntry entry : entries) {
 
-            if (!counts.containsKey(entry.drug)) {
-                counts.put(entry.drug, 1);
+            String drug = entry.drug;
+
+            if (!counts.containsKey(drug)) {
+                counts.put(drug, 1);
             } else {
-                counts.put(entry.drug, counts.get(entry.drug) + 1);
+                counts.put(drug, counts.get(drug) + 1);
             }
         }
 
-        String mostUsed = "None";
-        int max = 0;
+        // Find most used drug
+        String mostUsed = null;
+        int maxCount = 0;
 
         for (String drug : counts.keySet()) {
-            if (counts.get(drug) > max) {
-                max = counts.get(drug);
+
+            int count = counts.get(drug);
+
+            if (count > maxCount) {
+                maxCount = count;
                 mostUsed = drug;
             }
         }
 
-        statMostUsedDrug.setText("Most used drug: " + mostUsed);
+        // Average doses per day
+        if (entries.size() < 2) {
+            statAvgPerDay.setText("—");
+        } else {
 
-        if (!entries.isEmpty()) {
+            long first = entries.get(0).timestamp;
+            long last = entries.get(entries.size() - 1).timestamp;
 
-            DrugEntry last = entries.get(entries.size() - 1);
+            long diffMillis = last - first;
 
-            Date date = new Date(last.timestamp);
-            SimpleDateFormat sdf =
-                    new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
+            double days = diffMillis / (1000.0 * 60 * 60 * 24);
 
-            statLastDose.setText("Last dose: " + sdf.format(date));
+            if (days < 1) {
+                days = 1;
+            }
+
+            double avg = entries.size() / days;
+
+            statAvgPerDay.setText(String.format(Locale.getDefault(), "%.2f", avg));
         }
+
+        statMostUsedDrug.setText(mostUsed);
+
+        // Last dose
+        DrugEntry lastEntry = entries.get(entries.size() - 1);
+
+        Date date = new Date(lastEntry.timestamp);
+
+        SimpleDateFormat sdf =
+                new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
+
+        statLastDose.setText(sdf.format(date));
     }
 }
