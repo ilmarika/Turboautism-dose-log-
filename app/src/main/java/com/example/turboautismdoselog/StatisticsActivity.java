@@ -99,14 +99,28 @@ public class StatisticsActivity extends AppCompatActivity {
         }
 
         // Average doses per day
+
         if (entries.size() < 2) {
+
             statAvgPerDay.setText("—");
+
         } else {
 
-            long first = entries.get(0).timestamp;
-            long last = entries.get(entries.size() - 1).timestamp;
+            long minTimestamp = Long.MAX_VALUE;
+            long maxTimestamp = Long.MIN_VALUE;
 
-            long diffMillis = last - first;
+            for (DrugEntry entry : entries) {
+
+                if (entry.timestamp < minTimestamp) {
+                    minTimestamp = entry.timestamp;
+                }
+
+                if (entry.timestamp > maxTimestamp) {
+                    maxTimestamp = entry.timestamp;
+                }
+            }
+
+            long diffMillis = maxTimestamp - minTimestamp;
 
             double days = diffMillis / (1000.0 * 60 * 60 * 24);
 
