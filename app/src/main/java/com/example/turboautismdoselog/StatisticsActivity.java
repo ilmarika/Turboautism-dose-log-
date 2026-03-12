@@ -12,6 +12,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Calendar;
 
 public class StatisticsActivity extends AppCompatActivity {
 
@@ -21,6 +22,9 @@ public class StatisticsActivity extends AppCompatActivity {
     private TextView statAvgPerDay;
     private View emptyState;
     private View statisticsContent;
+    private TextView statEntriesToday;
+    private TextView statEntriesWeek;
+
 
     private AppDatabase db;
 
@@ -33,6 +37,8 @@ public class StatisticsActivity extends AppCompatActivity {
         statMostUsedDrug = findViewById(R.id.statMostUsedDrug);
         statLastDose = findViewById(R.id.statLastDose);
         statAvgPerDay = findViewById(R.id.statAvgPerDay);
+        statEntriesToday = findViewById(R.id.statEntriesToday);
+        statEntriesWeek = findViewById(R.id.statEntriesWeek);
         emptyState = findViewById(R.id.emptyState);
         statisticsContent = findViewById(R.id.statisticsContent);
 
@@ -144,5 +150,50 @@ public class StatisticsActivity extends AppCompatActivity {
                 new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
 
         statLastDose.setText(sdf.format(date));
+
+        // Entries today (timezone safe)
+
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+
+        long startOfDay = calendar.getTimeInMillis();
+
+        int todayCount = 0;
+
+        for (DrugEntry entry : entries) {
+
+            if (entry.timestamp >= startOfDay) {
+                todayCount++;
+            }
+        }
+
+        statEntriesToday.setText(String.valueOf(todayCount));
+
+        // Entries last 7 days (timezone safe)
+
+// go to local midnight
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+
+// subtract 7 days
+        calendar.add(Calendar.DAY_OF_YEAR, -7);
+
+        long weekStart = calendar.getTimeInMillis();
+
+        int weekCount = 0;
+
+        for (DrugEntry entry : entries) {
+
+            if (entry.timestamp >= weekStart) {
+                weekCount++;
+            }
+        }
+
+        statEntriesWeek.setText(String.valueOf(weekCount));
     }
 }
