@@ -30,6 +30,10 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.List;
 import java.util.ArrayList;
+import android.net.Uri;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.InputStream;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -55,6 +59,11 @@ public class MainActivity extends AppCompatActivity {
 
             if (item.getItemId() == R.id.action_statistics) {
                 startActivity(new Intent(this, StatisticsActivity.class));
+                return true;
+            }
+
+            if (item.getItemId() == R.id.action_import) {
+                openCSVPicker();
                 return true;
             }
 
@@ -281,6 +290,77 @@ public class MainActivity extends AppCompatActivity {
 
             e.printStackTrace();
             Toast.makeText(this, "Export failed", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private static final int PICK_CSV_FILE = 1001;
+
+    private void openCSVPicker() {
+
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.setType("text/*");
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+
+        startActivityForResult(intent, PICK_CSV_FILE);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == PICK_CSV_FILE && resultCode == RESULT_OK && data != null) {
+
+            importCSV(data.getData());
+        }
+    }
+
+    private void importCSV(Uri uri) {
+
+        try {
+
+            InputStream inputStream = getContentResolver().openInputStream(uri);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+
+            String line;
+            boolean firstLine = true;
+
+            SimpleDateFormat sdf =
+                    new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
+
+            while ((line = reader.readLine()) != null) {
+
+                if (firstLine) {
+                    firstLine = false;
+                    continue;
+                }
+
+                String[] parts = line.split(",");
+
+                if (parts.length < 4) continue;
+
+                DrugEntry entry = new DrugEntry();
+
+                entry.drug = parts[0];
+                entry.route = parts[1];
+                entry.dosage = parts[2];
+
+                Date date = sdf.parse(parts[3]);
+                entry.timestamp = date.getTime();
+
+                db.drugDao().insert(entry);
+            }
+
+            reader.close();
+
+            refreshList();
+
+            Toast.makeText(this, "CSV import complete", Toast.LENGTH_LONG).show();
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+            Toast.makeText(this, "Import failed", Toast.LENGTH_LONG).show();
         }
     }
 }
