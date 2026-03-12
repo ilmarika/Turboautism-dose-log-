@@ -13,4 +13,9 @@
         android:icon="@android:drawable/ic_menu_save"
         android:showAsAction="never"/>
 
+    <item
+        android:id="@+id/action_import"
+        android:title="Import CSV"
+        android:showAsAction="never"/>
+
 </menu>
