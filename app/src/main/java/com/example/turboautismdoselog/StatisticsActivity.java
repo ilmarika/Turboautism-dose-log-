@@ -5,26 +5,30 @@ import android.view.View;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 import androidx.room.Room;
 
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Calendar;
 
 public class StatisticsActivity extends AppCompatActivity {
 
     private TextView statTotalEntries;
     private TextView statMostUsedDrug;
-    private TextView statLastDose;
-    private TextView statAvgPerDay;
-    private View emptyState;
-    private View statisticsContent;
     private TextView statEntriesToday;
     private TextView statEntriesWeek;
+    private TextView statAvgPerDay;
+    private TextView statLastDose;
 
+    private RecyclerView recyclerDrugStats;
+    private DrugStatsAdapter drugStatsAdapter;
+
+    private View emptyState;
+    private View statisticsContent;
 
     private AppDatabase db;
 
@@ -35,10 +39,14 @@ public class StatisticsActivity extends AppCompatActivity {
 
         statTotalEntries = findViewById(R.id.statTotalEntries);
         statMostUsedDrug = findViewById(R.id.statMostUsedDrug);
-        statLastDose = findViewById(R.id.statLastDose);
-        statAvgPerDay = findViewById(R.id.statAvgPerDay);
         statEntriesToday = findViewById(R.id.statEntriesToday);
         statEntriesWeek = findViewById(R.id.statEntriesWeek);
+        statAvgPerDay = findViewById(R.id.statAvgPerDay);
+        statLastDose = findViewById(R.id.statLastDose);
+
+        recyclerDrugStats = findViewById(R.id.recyclerDrugStats);
+        recyclerDrugStats.setLayoutManager(new LinearLayoutManager(this));
+
         emptyState = findViewById(R.id.emptyState);
         statisticsContent = findViewById(R.id.statisticsContent);
 
@@ -55,9 +63,6 @@ public class StatisticsActivity extends AppCompatActivity {
 
         List<DrugEntry> entries = db.drugDao().getAll();
 
-        // Total entries
-        statTotalEntries.setText(String.valueOf(entries.size()));
-
         if (entries.isEmpty()) {
 
             emptyState.setVisibility(View.VISIBLE);
@@ -70,39 +75,61 @@ public class StatisticsActivity extends AppCompatActivity {
             statisticsContent.setVisibility(View.VISIBLE);
         }
 
-        if (entries.isEmpty()) {
-            statMostUsedDrug.setText("—");
-            statLastDose.setText("—");
-            return;
+        // Total entries
+
+        statTotalEntries.setText(String.valueOf(entries.size()));
+
+        // Most used drug
+
+        List<DrugStats> stats = db.drugDao().getDrugStats();
+
+        if (!stats.isEmpty()) {
+            statMostUsedDrug.setText(stats.get(0).drug);
         }
 
-        // Count drugs
-        HashMap<String, Integer> counts = new HashMap<>();
+        // Entries today (timezone safe)
+
+        Calendar calendar = Calendar.getInstance();
+
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+
+        long startOfDay = calendar.getTimeInMillis();
+
+        int todayCount = 0;
 
         for (DrugEntry entry : entries) {
-
-            String drug = entry.drug;
-
-            if (!counts.containsKey(drug)) {
-                counts.put(drug, 1);
-            } else {
-                counts.put(drug, counts.get(drug) + 1);
+            if (entry.timestamp >= startOfDay) {
+                todayCount++;
             }
         }
 
-        // Find most used drug
-        String mostUsed = null;
-        int maxCount = 0;
+        statEntriesToday.setText(String.valueOf(todayCount));
 
-        for (String drug : counts.keySet()) {
+        // Entries last 7 days (timezone safe)
 
-            int count = counts.get(drug);
+        Calendar weekCalendar = Calendar.getInstance();
 
-            if (count > maxCount) {
-                maxCount = count;
-                mostUsed = drug;
+        weekCalendar.set(Calendar.HOUR_OF_DAY, 0);
+        weekCalendar.set(Calendar.MINUTE, 0);
+        weekCalendar.set(Calendar.SECOND, 0);
+        weekCalendar.set(Calendar.MILLISECOND, 0);
+
+        weekCalendar.add(Calendar.DAY_OF_YEAR, -7);
+
+        long weekStart = weekCalendar.getTimeInMillis();
+
+        int weekCount = 0;
+
+        for (DrugEntry entry : entries) {
+            if (entry.timestamp >= weekStart) {
+                weekCount++;
             }
         }
+
+        statEntriesWeek.setText(String.valueOf(weekCount));
 
         // Average doses per day
 
@@ -136,64 +163,31 @@ public class StatisticsActivity extends AppCompatActivity {
 
             double avg = entries.size() / days;
 
-            statAvgPerDay.setText(String.format(Locale.getDefault(), "%.2f", avg));
+            statAvgPerDay.setText(
+                    String.format(Locale.getDefault(), "%.2f", avg)
+            );
         }
 
-        statMostUsedDrug.setText(mostUsed);
-
         // Last dose
-        DrugEntry lastEntry = entries.get(entries.size() - 1);
 
-        Date date = new Date(lastEntry.timestamp);
+        long lastTimestamp = 0;
+
+        for (DrugEntry entry : entries) {
+            if (entry.timestamp > lastTimestamp) {
+                lastTimestamp = entry.timestamp;
+            }
+        }
+
+        Date date = new Date(lastTimestamp);
 
         SimpleDateFormat sdf =
                 new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
 
         statLastDose.setText(sdf.format(date));
 
-        // Entries today (timezone safe)
+        // Substance statistics RecyclerView
 
-        Calendar calendar = Calendar.getInstance();
-        calendar.set(Calendar.HOUR_OF_DAY, 0);
-        calendar.set(Calendar.MINUTE, 0);
-        calendar.set(Calendar.SECOND, 0);
-        calendar.set(Calendar.MILLISECOND, 0);
-
-        long startOfDay = calendar.getTimeInMillis();
-
-        int todayCount = 0;
-
-        for (DrugEntry entry : entries) {
-
-            if (entry.timestamp >= startOfDay) {
-                todayCount++;
-            }
-        }
-
-        statEntriesToday.setText(String.valueOf(todayCount));
-
-        // Entries last 7 days (timezone safe)
-
-// go to local midnight
-        calendar.set(Calendar.HOUR_OF_DAY, 0);
-        calendar.set(Calendar.MINUTE, 0);
-        calendar.set(Calendar.SECOND, 0);
-        calendar.set(Calendar.MILLISECOND, 0);
-
-// subtract 7 days
-        calendar.add(Calendar.DAY_OF_YEAR, -7);
-
-        long weekStart = calendar.getTimeInMillis();
-
-        int weekCount = 0;
-
-        for (DrugEntry entry : entries) {
-
-            if (entry.timestamp >= weekStart) {
-                weekCount++;
-            }
-        }
-
-        statEntriesWeek.setText(String.valueOf(weekCount));
+        drugStatsAdapter = new DrugStatsAdapter(stats);
+        recyclerDrugStats.setAdapter(drugStatsAdapter);
     }
 }

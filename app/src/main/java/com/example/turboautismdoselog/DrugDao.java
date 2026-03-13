@@ -22,4 +22,14 @@ public interface DrugDao {
 
     @Update
     void update(DrugEntry entry);
+
+    @Query(
+            "SELECT drug, " +
+                    "COUNT(*) AS total, " +
+                    "MAX(timestamp) AS lastTimestamp " +
+                    "FROM DrugEntry " +
+                    "GROUP BY drug " +
+                    "ORDER BY total DESC"
+    )
+    List<DrugStats> getDrugStats();
 }
