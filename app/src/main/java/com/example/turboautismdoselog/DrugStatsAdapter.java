@@ -25,6 +25,7 @@ public class DrugStatsAdapter extends RecyclerView.Adapter<DrugStatsAdapter.View
         TextView drugName;
         TextView total;
         TextView last;
+        TextView avg;
 
         public ViewHolder(View view) {
             super(view);
@@ -32,6 +33,7 @@ public class DrugStatsAdapter extends RecyclerView.Adapter<DrugStatsAdapter.View
             drugName = view.findViewById(R.id.statDrugName);
             total = view.findViewById(R.id.statDrugTotal);
             last = view.findViewById(R.id.statDrugLast);
+            avg = view.findViewById(R.id.statDrugAvg);
         }
     }
 
@@ -58,6 +60,22 @@ public class DrugStatsAdapter extends RecyclerView.Adapter<DrugStatsAdapter.View
                 new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault());
 
         holder.last.setText("Last dose: " + sdf.format(date));
+
+        // Calculate average per day
+
+        double days = (stat.lastTimestamp - stat.firstTimestamp) /
+                (1000.0 * 60 * 60 * 24);
+
+        if (days < 1) {
+            days = 1;
+        }
+
+        double avg = stat.total / days;
+
+        holder.avg.setText(
+                "Average/day: " +
+                        String.format(Locale.getDefault(), "%.2f", avg)
+        );
     }
 
     @Override

@@ -26,6 +26,7 @@ public interface DrugDao {
     @Query(
             "SELECT drug, " +
                     "COUNT(*) AS total, " +
+                    "MIN(timestamp) AS firstTimestamp," +
                     "MAX(timestamp) AS lastTimestamp " +
                     "FROM DrugEntry " +
                     "GROUP BY drug " +
